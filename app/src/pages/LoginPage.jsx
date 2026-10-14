@@ -32,7 +32,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout showSocialProof={false}>
       <p className="text-xs font-semibold uppercase text-primary">Welcome back</p>
       <h2 className="mt-1 text-3xl font-extrabold tracking-tight">Good to see you again</h2>
       <p className="mt-1 text-sm text-muted-foreground">

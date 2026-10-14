@@ -1,6 +1,6 @@
 import { Logo, UserAvatar } from "@/components/common/Avatar";
 
-export function AuthLayout({ children }) {
+export function AuthLayout({ children, showSocialProof = true }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <aside className="relative hidden overflow-hidden bg-brand p-12 text-primary-foreground lg:flex lg:flex-col">
@@ -17,21 +17,23 @@ export function AuthLayout({ children }) {
             A cozy corner to share the little things, follow people you love, and be wonderfully
             yourself.
           </p>
-          <div className="mt-10 flex items-center gap-3">
-            <div className="flex -space-x-3">
-              {[0, 1, 2].map((i) => (
-                <UserAvatar
-                  key={i}
-                  size={38}
-                  className="rounded-full ring-2 ring-primary-foreground/60"
-                />
-              ))}
+          {showSocialProof && (
+            <div className="mt-10 flex items-center gap-3">
+              <div className="flex -space-x-3">
+                {[0, 1, 2].map((i) => (
+                  <UserAvatar
+                    key={i}
+                    size={38}
+                    className="rounded-full ring-2 ring-primary-foreground/60"
+                  />
+                ))}
+              </div>
+              <div className="text-sm">
+                <p className="font-bold">12k+ people</p>
+                <p className="opacity-75">already sharing</p>
+              </div>
             </div>
-            <div className="text-sm">
-              <p className="font-bold">12k+ people</p>
-              <p className="opacity-75">already sharing</p>
-            </div>
-          </div>
+          )}
         </div>
         <p className="text-xs opacity-70">© 2025 Social Connect. Make yourself at home.</p>
       </aside>

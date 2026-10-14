@@ -7,11 +7,34 @@ import { getUserById, getUserByUsername, serializeUser } from "../utils/sql.js";
 
 const normalizeUsername = (value = "") => value.trim().replace(/^@/, "").toLowerCase();
 
+const isAtLeast17 = (birthday) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthday)) return false;
+
+  const [year, month, day] = birthday.split("-").map(Number);
+  const birthDate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    birthDate.getUTCFullYear() !== year ||
+    birthDate.getUTCMonth() !== month - 1 ||
+    birthDate.getUTCDate() !== day
+  ) {
+    return false;
+  }
+
+  const today = new Date();
+  const cutoff = new Date(
+    Date.UTC(today.getUTCFullYear() - 17, today.getUTCMonth(), today.getUTCDate()),
+  );
+  return birthDate <= cutoff;
+};
+
 export const register = asyncHandler(async (req, res) => {
   const { name, username, email, password, birthday, gender } = req.body;
   const normalizedUsername = normalizeUsername(username);
   if (!name || !normalizedUsername || !email || !password) {
     throw new ApiError(400, "Name, username, email and password are required");
+  }
+  if (!birthday || !isAtLeast17(birthday)) {
+    throw new ApiError(400, "You must be at least 17 years old to sign up");
   }
   if (password.length < 8) throw new ApiError(400, "Password must be at least 8 characters");
 

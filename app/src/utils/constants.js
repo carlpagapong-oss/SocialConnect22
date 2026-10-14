@@ -2,7 +2,7 @@ export const TOKEN_KEY = "socialconnect_token";
 
 export const API_URL = import.meta.env.VITE_API_URL || "/api";
 
-export const GENDERS = ["Woman", "Man", "Non-binary", "Prefer not to say"];
+export const GENDERS = ["Male", "Female"];
 
 // Shared Tailwind classes for text inputs on the auth screens.
 export const inputCls =
