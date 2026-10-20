@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Field } from "@/components/common/Field";
+import { PasswordField } from "@/components/common/PasswordField";
 import { FormError } from "@/components/common/PageState";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -17,11 +18,19 @@ const getMinimumBirthday = () => {
   return `${minimumBirthday.getFullYear()}-${month}-${day}`;
 };
 
+const getToday = () => {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${today.getFullYear()}-${month}-${day}`;
+};
+
 export default function SignupPage() {
   usePageTitle("Create an account — Social Connect");
   const { register } = useAuth();
   const navigate = useNavigate();
   const minimumBirthday = getMinimumBirthday();
+  const maximumBirthday = getToday();
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -31,8 +40,16 @@ export default function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!form.birthday || form.birthday > minimumBirthday) {
-      setError("You must be at least 17 years old to sign up");
+    if (!form.birthday) {
+      setError("Please enter your birthday");
+      return;
+    }
+    if (form.birthday > maximumBirthday) {
+      setError("Birthday cannot be in the future.");
+      return;
+    }
+    if (form.birthday > minimumBirthday) {
+      setError("You are underage. You must be at least 17 years old to sign up.");
       return;
     }
     setSubmitting(true);
@@ -67,11 +84,16 @@ export default function SignupPage() {
             <input
               required
               type="date"
-              max={minimumBirthday}
+              max={maximumBirthday}
               className={inputCls}
               value={form.birthday}
               onChange={set("birthday")}
             />
+            {form.birthday && form.birthday > minimumBirthday && (
+              <p className="mt-1 text-xs text-destructive" role="alert">
+                You are underage. You must be at least 17 years old.
+              </p>
+            )}
           </Field>
           <Field label="Gender">
             <select required className={inputCls} value={form.gender} onChange={set("gender")}>
@@ -104,11 +126,7 @@ export default function SignupPage() {
           />
         </Field>
         <Field label="Password">
-          <input
-            required
-            minLength={8}
-            type="password"
-            className={inputCls}
+          <PasswordField
             placeholder="At least 8 characters"
             value={form.password}
             onChange={set("password")}

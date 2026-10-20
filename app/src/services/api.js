@@ -22,10 +22,10 @@ async function request(path, { method = "GET", body } = {}) {
     response = await fetch(`${API_URL}${path}`, {
       method,
       headers: {
-        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(body instanceof FormData ? {} : body ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
     });
   } catch {
     throw new ApiError("Can't reach the server. Check your connection and try again.", 0);
@@ -44,4 +44,5 @@ export const api = {
   post: (path, body) => request(path, { method: "POST", body: body ?? {} }),
   put: (path, body) => request(path, { method: "PUT", body }),
   delete: (path) => request(path, { method: "DELETE" }),
+  upload: (path, body) => request(path, { method: "POST", body }),
 };

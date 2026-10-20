@@ -13,11 +13,25 @@ export const getSuggestions = asyncHandler(async (req, res) => {
             EXISTS(SELECT 1 FROM follow f WHERE f.follower_id = ? AND f.following_id = a.account_id) AS isFollowing
      FROM account a LEFT JOIN profile p ON p.account_id = a.account_id
      WHERE a.account_id <> ?
-       AND NOT EXISTS (
-         SELECT 1 FROM follow f WHERE f.follower_id = ? AND f.following_id = a.account_id
-       )
-     ORDER BY a.created_at DESC LIMIT 5`,
-    [req.user.id, req.user.id, req.user.id],
+       AND a.account_status = 'active'
+     ORDER BY isFollowing ASC, a.created_at DESC LIMIT 5`,
+    [req.user.id, req.user.id],
+  );
+  res.json({ users: rows.map((row) => serializeUser(row, req.user.id)) });
+});
+
+export const getDirectory = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT a.account_id AS id, a.username, a.email, a.created_at AS account_created_at,
+            p.display_name AS name, p.profile_picture AS avatar, p.background_picture AS cover,
+            p.bio, p.gender, p.birthday, p.relation_status AS relationshipStatus,
+            (SELECT COUNT(*) FROM follow f WHERE f.following_id = a.account_id) AS followersCount,
+            (SELECT COUNT(*) FROM follow f WHERE f.follower_id = a.account_id) AS followingCount,
+            EXISTS(SELECT 1 FROM follow f WHERE f.follower_id = ? AND f.following_id = a.account_id) AS isFollowing
+     FROM account a LEFT JOIN profile p ON p.account_id = a.account_id
+     WHERE a.account_id <> ? AND a.account_status = 'active'
+     ORDER BY a.created_at DESC`,
+    [req.user.id, req.user.id],
   );
   res.json({ users: rows.map((row) => serializeUser(row, req.user.id)) });
 });
@@ -37,7 +51,8 @@ export const getUserPosts = asyncHandler(async (req, res) => {
   const user = await getUserByUsername(req.params.username);
   if (!user) throw new ApiError(404, "We couldn't find that person");
   const [rows] = await pool.query(
-    `SELECT p.post_id, p.account_id AS author_id, p.content, p.image_path, p.created_at, p.updated_at,
+    `SELECT p.post_id, p.account_id AS author_id, p.content, p.image_path, p.media_type,
+            p.created_at, p.updated_at,
             a.username AS author_username, pr.display_name AS author_name, pr.profile_picture AS author_avatar,
             (SELECT COUNT(*) FROM post_like pl WHERE pl.post_id = p.post_id) AS likes_count,
             (SELECT COUNT(*) FROM comment c WHERE c.post_id = p.post_id) AS comment_count,
@@ -53,6 +68,7 @@ export const getUserPosts = asyncHandler(async (req, res) => {
       id: String(row.post_id),
       text: row.content,
       image: row.image_path || "",
+      mediaType: row.media_type || (row.image_path ? "image" : ""),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       author: {

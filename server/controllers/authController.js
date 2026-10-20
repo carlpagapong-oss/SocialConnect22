@@ -49,8 +49,8 @@ export const register = asyncHandler(async (req, res) => {
   try {
     await connection.beginTransaction();
     const [account] = await connection.query(
-      "INSERT INTO account (username, email, password_hash, account_status) VALUES (?, ?, ?, ?)",
-      [normalizedUsername, email.trim().toLowerCase(), passwordHash, "active"],
+      "INSERT INTO account (username, email, password_hash, role, account_status) VALUES (?, ?, ?, ?, ?)",
+      [normalizedUsername, email.trim().toLowerCase(), passwordHash, "user", "active"],
     );
     const accountId = account.insertId;
     await connection.query(

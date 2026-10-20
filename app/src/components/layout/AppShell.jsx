@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Bookmark, Home, LogOut, Search, User } from "lucide-react";
+import { Bell, Bookmark, Home, LogOut, Search, Shield, User } from "lucide-react";
 import { Logo, UserAvatar } from "@/components/common/Avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/utils/cn";
@@ -26,7 +26,7 @@ export function AppShell({ children }) {
           <Logo />
         </div>
         <nav className="mt-8 space-y-1">
-          {nav.map(({ to, label, icon: Icon }) => (
+          {[...nav, ...(user?.role === "admin" ? [{ to: "/admin/accounts", label: "Admin", icon: Shield }] : [])].map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

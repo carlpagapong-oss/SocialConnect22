@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Field } from "@/components/common/Field";
+import { PasswordField } from "@/components/common/PasswordField";
 import { FormError } from "@/components/common/PageState";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -22,8 +23,8 @@ export default function LoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      await login(form.identifier, form.password);
-      navigate("/home");
+      const user = await login(form.identifier, form.password);
+      navigate(user.role === "admin" ? "/admin/accounts" : "/home");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -50,11 +51,7 @@ export default function LoginPage() {
           />
         </Field>
         <Field label="Password">
-          <input
-            required
-            minLength={8}
-            type="password"
-            className={inputCls}
+          <PasswordField
             placeholder="At least 8 characters"
             value={form.password}
             onChange={set("password")}

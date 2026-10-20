@@ -14,9 +14,11 @@ export function ProtectedRoute() {
 
 // Wraps login/signup so signed-in users skip straight to the feed.
 export function GuestRoute() {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
   if (loading) return <Loading />;
-  if (isAuthenticated) return <Navigate to="/home" replace />;
+  if (isAuthenticated) {
+    return <Navigate to={user?.role === "admin" ? "/admin/accounts" : "/home"} replace />;
+  }
   return <Outlet />;
 }

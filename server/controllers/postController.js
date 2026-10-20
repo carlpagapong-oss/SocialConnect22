@@ -2,10 +2,24 @@ import { pool } from "../config/db.js";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { serializePostRow } from "../utils/sql.js";
+import path from "node:path";
+import { mkdir } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 
 const POST_FIELDS = `
-  p.post_id, p.account_id AS author_id, p.content, p.image_path, p.created_at, p.updated_at,
-  a.username AS author_username, pr.display_name AS author_name, pr.profile_picture AS author_avatar,
+  p.post_id, p.account_id AS owner_id, p.original_post_id,
+  COALESCE(op.account_id, p.account_id) AS author_id,
+  COALESCE(op.content, p.content) AS content,
+  COALESCE(op.image_path, p.image_path) AS image_path,
+  COALESCE(op.media_type, p.media_type) AS media_type,
+  p.created_at, p.updated_at,
+  COALESCE(oa.username, a.username) AS author_username,
+  COALESCE(opr.display_name, pr.display_name) AS author_name,
+  COALESCE(opr.profile_picture, pr.profile_picture) AS author_avatar,
+  CASE WHEN p.original_post_id IS NULL THEN NULL ELSE p.account_id END AS shared_by_id,
+  CASE WHEN p.original_post_id IS NULL THEN NULL ELSE a.username END AS shared_by_username,
+  CASE WHEN p.original_post_id IS NULL THEN NULL ELSE pr.display_name END AS shared_by_name,
+  CASE WHEN p.original_post_id IS NULL THEN NULL ELSE pr.profile_picture END AS shared_by_avatar,
   (SELECT COUNT(*) FROM post_like pl WHERE pl.post_id = p.post_id) AS likes_count,
   (SELECT COUNT(*) FROM comment c WHERE c.post_id = p.post_id) AS comment_count,
   EXISTS(SELECT 1 FROM post_like vpl WHERE vpl.post_id = p.post_id AND vpl.account_id = ?) AS liked,
@@ -17,6 +31,9 @@ async function findPost(id, viewerId) {
     `SELECT ${POST_FIELDS} FROM post p
      JOIN account a ON a.account_id = p.account_id
      LEFT JOIN profile pr ON pr.account_id = a.account_id
+     LEFT JOIN post op ON op.post_id = p.original_post_id
+     LEFT JOIN account oa ON oa.account_id = op.account_id
+     LEFT JOIN profile opr ON opr.account_id = op.account_id
      WHERE p.post_id = ? LIMIT 1`,
     [viewerId, viewerId, id],
   );
@@ -29,6 +46,9 @@ export const getFeed = asyncHandler(async (req, res) => {
     `SELECT ${POST_FIELDS} FROM post p
      JOIN account a ON a.account_id = p.account_id
      LEFT JOIN profile pr ON pr.account_id = a.account_id
+     LEFT JOIN post op ON op.post_id = p.original_post_id
+     LEFT JOIN account oa ON oa.account_id = op.account_id
+     LEFT JOIN profile opr ON opr.account_id = op.account_id
      ORDER BY p.created_at DESC LIMIT ?`,
     [req.user.id, req.user.id, limit],
   );
@@ -36,22 +56,54 @@ export const getFeed = asyncHandler(async (req, res) => {
 });
 
 export const createPost = asyncHandler(async (req, res) => {
-  const { text, image } = req.body;
-  if (!text || !text.trim()) throw new ApiError(400, "Write something to share");
+  const { text, image, mediaType } = req.body;
+  if ((!text || !text.trim()) && !image) {
+    throw new ApiError(400, "Add a message, photo, or video before posting");
+  }
   if (text.trim().length > 1000) throw new ApiError(400, "Posts must be 1000 characters or fewer");
 
   const [result] = await pool.query(
-    "INSERT INTO post (account_id, content, image_path) VALUES (?, ?, ?)",
-    [req.user.id, text.trim(), image || null],
+    "INSERT INTO post (account_id, content, image_path, media_type) VALUES (?, ?, ?, ?)",
+    [req.user.id, text.trim(), image || null, mediaType || null],
   );
   const post = await findPost(result.insertId, req.user.id);
   res.status(201).json({ post: serializePostRow(post) });
 });
 
+export const sharePost = asyncHandler(async (req, res) => {
+  const original = await findPost(req.params.id, req.user.id);
+  if (!original) throw new ApiError(404, "Post not found");
+  if (String(original.owner_id) === String(req.user.id)) {
+    throw new ApiError(400, "You cannot share your own post");
+  }
+  const originalPostId = original.original_post_id || req.params.id;
+  const [result] = await pool.query(
+    "INSERT INTO post (account_id, content, original_post_id) VALUES (?, ?, ?)",
+    [req.user.id, "", originalPostId],
+  );
+  const shared = await findPost(result.insertId, req.user.id);
+  res.status(201).json({ post: serializePostRow(shared) });
+});
+
+export const uploadPostMedia = asyncHandler(async (req, res) => {
+  if (!req.file) throw new ApiError(400, "Choose a photo or video to upload");
+  const uploadsDir = path.resolve("uploads");
+  await mkdir(uploadsDir, { recursive: true });
+  const extension = path.extname(req.file.originalname).toLowerCase();
+  const filename = `${randomUUID()}${extension}`;
+  const destination = path.join(uploadsDir, filename);
+  await import("node:fs/promises").then(({ writeFile }) => writeFile(destination, req.file.buffer));
+  const mediaType = req.file.mimetype.startsWith("video/") ? "video" : "image";
+  res.status(201).json({
+    url: `${req.protocol}://${req.get("host")}/uploads/${filename}`,
+    mediaType,
+  });
+});
+
 export const deletePost = asyncHandler(async (req, res) => {
   const post = await findPost(req.params.id, req.user.id);
   if (!post) throw new ApiError(404, "Post not found");
-  if (String(post.author_id) !== String(req.user.id)) {
+  if (String(post.owner_id) !== String(req.user.id)) {
     throw new ApiError(403, "You can only delete your own posts");
   }
   const connection = await pool.getConnection();
@@ -113,6 +165,9 @@ export const getBookmarks = asyncHandler(async (req, res) => {
     `SELECT ${POST_FIELDS} FROM post p
      JOIN account a ON a.account_id = p.account_id
      LEFT JOIN profile pr ON pr.account_id = a.account_id
+     LEFT JOIN post op ON op.post_id = p.original_post_id
+     LEFT JOIN account oa ON oa.account_id = op.account_id
+     LEFT JOIN profile opr ON opr.account_id = op.account_id
      JOIN bookmark b ON b.post_id = p.post_id AND b.account_id = ?
      ORDER BY b.created_at DESC`,
     [req.user.id, req.user.id, req.user.id],
