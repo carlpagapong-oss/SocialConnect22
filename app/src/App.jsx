@@ -9,6 +9,7 @@ import BookmarksPage from "@/pages/BookmarksPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import AdminPage from "@/pages/AdminPage";
 import PeoplePage from "@/pages/PeoplePage";
+import PostPage from "@/pages/PostPage";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/home" element={<HomePage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/user/:username" element={<UserProfilePage />} />
+        <Route path="/post/:id" element={<PostPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
         <Route path="/people" element={<PeoplePage />} />
         <Route path="/admin/accounts" element={<AdminPage />} />

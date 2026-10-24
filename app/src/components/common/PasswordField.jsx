@@ -2,7 +2,14 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { inputCls } from "@/utils/constants";
 
-export function PasswordField({ value, onChange, placeholder, minLength = 8, required = true }) {
+export function PasswordField({
+  value,
+  onChange,
+  placeholder,
+  minLength = 8,
+  required = true,
+  ...inputProps
+}) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -15,6 +22,7 @@ export function PasswordField({ value, onChange, placeholder, minLength = 8, req
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        {...inputProps}
       />
       <button
         type="button"

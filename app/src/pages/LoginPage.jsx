@@ -26,7 +26,7 @@ export default function LoginPage() {
       const user = await login(form.identifier, form.password);
       navigate(user.role === "admin" ? "/admin/accounts" : "/home");
     } catch (err) {
-      setError(err.message);
+      setError(err.status === 401 ? "Username or password is incorrect." : err.message);
     } finally {
       setSubmitting(false);
     }
@@ -40,12 +40,14 @@ export default function LoginPage() {
         Enter your details to get back to your circle.
       </p>
       <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-        <FormError message={error} />
-        <Field label="Username or Gmail">
+        <FormError id="login-error" message={error} />
+        <Field label="Username or email">
           <input
             required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "login-error" : undefined}
             className={inputCls}
-            placeholder="you@gmail.com"
+            placeholder="Username or email"
             value={form.identifier}
             onChange={set("identifier")}
           />
@@ -53,14 +55,13 @@ export default function LoginPage() {
         <Field label="Password">
           <PasswordField
             placeholder="At least 8 characters"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "login-error" : undefined}
             value={form.password}
             onChange={set("password")}
           />
         </Field>
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 text-secondary-foreground">
-            <input type="checkbox" className="accent-primary" /> Remember me
-          </label>
+        <div className="flex justify-end text-sm">
           <a href="#" className="text-primary">
             Forgot password?
           </a>

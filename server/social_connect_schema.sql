@@ -26,6 +26,7 @@ CREATE TABLE profile (
   display_name VARCHAR(100) NOT NULL,
   profile_picture VARCHAR(255) DEFAULT NULL,
   background_picture VARCHAR(255) DEFAULT NULL,
+  background_position VARCHAR(30) NOT NULL DEFAULT '50% 50%',
   bio TEXT DEFAULT NULL,
   age TINYINT UNSIGNED DEFAULT NULL,
   birthday DATE DEFAULT NULL,

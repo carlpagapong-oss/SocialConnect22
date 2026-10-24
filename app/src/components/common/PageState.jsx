@@ -28,10 +28,14 @@ export function EmptyState({ title, hint }) {
   );
 }
 
-export function FormError({ message }) {
+export function FormError({ message, id }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+    <p
+      id={id}
+      role="alert"
+      className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+    >
       {message}
     </p>
   );

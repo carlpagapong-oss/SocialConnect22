@@ -87,6 +87,13 @@ automatically sent to `/admin/accounts`. Regular users are sent to `/home`.
 The Admin page can activate or deactivate existing accounts. The API enforces
 the `admin` role, so hiding the link is not the security control.
 
+### Database migrations
+
+Apply each SQL file in `server/migrations/` once to the `social_connect`
+database after updating an existing installation. In particular,
+`20261023_add_cover_position.sql` adds the `profile.background_position` column
+used by profile and login queries.
+
 ## API
 
 | Method | Endpoint | Purpose |

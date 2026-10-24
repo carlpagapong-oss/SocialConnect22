@@ -6,6 +6,11 @@ export const userService = {
   getProfile: (username) => api.get(`/users/${encodeURIComponent(username)}`),
   getPosts: (username) => api.get(`/users/${encodeURIComponent(username)}/posts`),
   toggleFollow: (username) => api.post(`/users/${encodeURIComponent(username)}/follow`),
+  uploadMedia: async (file) => {
+    const body = new FormData();
+    body.append("media", file);
+    return api.upload("/posts/upload", body);
+  },
   updateMe: (changes) => api.put("/users/me", changes),
   getAccounts: () => api.get("/users/admin/accounts"),
   updateAccountStatus: (id, status) =>

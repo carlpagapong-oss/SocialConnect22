@@ -6,13 +6,15 @@ import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 
-const POST_FIELDS = `
+export const POST_FIELDS = `
   p.post_id, p.account_id AS owner_id, p.original_post_id,
+  p.content AS shared_content,
   COALESCE(op.account_id, p.account_id) AS author_id,
   COALESCE(op.content, p.content) AS content,
   COALESCE(op.image_path, p.image_path) AS image_path,
   COALESCE(op.media_type, p.media_type) AS media_type,
   p.created_at, p.updated_at,
+  COALESCE(op.created_at, p.created_at) AS original_created_at,
   COALESCE(oa.username, a.username) AS author_username,
   COALESCE(opr.display_name, pr.display_name) AS author_name,
   COALESCE(opr.profile_picture, pr.profile_picture) AS author_avatar,
@@ -55,6 +57,15 @@ export const getFeed = asyncHandler(async (req, res) => {
   res.json({ posts: rows.map(serializePostRow) });
 });
 
+export const getPost = asyncHandler(async (req, res) => {
+  const post = await findPost(req.params.id, req.user.id);
+  if (!post) throw new ApiError(404, "Post not found");
+  const original = post.original_post_id
+    ? await findPost(post.original_post_id, req.user.id)
+    : post;
+  res.json({ post: serializePostRow(original) });
+});
+
 export const createPost = asyncHandler(async (req, res) => {
   const { text, image, mediaType } = req.body;
   if ((!text || !text.trim()) && !image) {
@@ -73,16 +84,67 @@ export const createPost = asyncHandler(async (req, res) => {
 export const sharePost = asyncHandler(async (req, res) => {
   const original = await findPost(req.params.id, req.user.id);
   if (!original) throw new ApiError(404, "Post not found");
-  if (String(original.owner_id) === String(req.user.id)) {
+  if (String(original.author_id) === String(req.user.id)) {
     throw new ApiError(400, "You cannot share your own post");
   }
   const originalPostId = original.original_post_id || req.params.id;
+  const message = typeof req.body.message === "string" ? req.body.message.trim() : "";
+  if (message.length > 1000) {
+    throw new ApiError(400, "Your message must be 1000 characters or fewer");
+  }
   const [result] = await pool.query(
     "INSERT INTO post (account_id, content, original_post_id) VALUES (?, ?, ?)",
-    [req.user.id, "", originalPostId],
+    [req.user.id, message, originalPostId],
   );
   const shared = await findPost(result.insertId, req.user.id);
   res.status(201).json({ post: serializePostRow(shared) });
+});
+
+export const updatePost = asyncHandler(async (req, res) => {
+  const post = await findPost(req.params.id, req.user.id);
+  if (!post) throw new ApiError(404, "Post not found");
+  if (String(post.owner_id) !== String(req.user.id)) {
+    throw new ApiError(403, "You can only edit your own post");
+  }
+  if (!post.original_post_id) {
+    throw new ApiError(400, "Only a shared post caption can be edited here");
+  }
+  const message = typeof req.body.message === "string" ? req.body.message.trim() : "";
+  if (message.length > 1000) {
+    throw new ApiError(400, "Your message must be 1000 characters or fewer");
+  }
+  await pool.query("UPDATE post SET content = ? WHERE post_id = ?", [message, req.params.id]);
+  const updated = await findPost(req.params.id, req.user.id);
+  res.json({ post: serializePostRow(updated) });
+});
+
+export const updateSharedPost = asyncHandler(async (req, res) => {
+  const post = await findPost(req.params.id, req.user.id);
+  if (!post) throw new ApiError(404, "Shared post not found");
+  if (String(post.owner_id) !== String(req.user.id)) {
+    throw new ApiError(403, "You can only edit your own shared post");
+  }
+  if (!post.original_post_id) {
+    throw new ApiError(400, "This post is not a shared post");
+  }
+
+  const message = typeof req.body.message === "string" ? req.body.message.trim() : "";
+  if (message.length > 1000) {
+    throw new ApiError(400, "Your message must be 1000 characters or fewer");
+  }
+
+  await pool.query("UPDATE post SET content = ? WHERE post_id = ? AND account_id = ?", [
+    message,
+    req.params.id,
+    req.user.id,
+  ]);
+  const updated = await findPost(req.params.id, req.user.id);
+  res.json({
+    post: {
+      ...serializePostRow(updated),
+      sharedText: message,
+    },
+  });
 });
 
 export const uploadPostMedia = asyncHandler(async (req, res) => {

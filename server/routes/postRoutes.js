@@ -6,7 +6,10 @@ import {
   getBookmarks,
   getComments,
   getFeed,
+  getPost,
   sharePost,
+  updatePost,
+  updateSharedPost,
   toggleBookmark,
   toggleLike,
 } from "../controllers/postController.js";
@@ -33,7 +36,10 @@ router.use(protect);
 router.post("/upload", upload.single("media"), uploadPostMedia);
 router.route("/").get(getFeed).post(createPost);
 router.get("/bookmarks", getBookmarks); // must come before "/:id"
+router.get("/:id", getPost);
 router.post("/:id/share", sharePost);
+router.put("/:id/share", updateSharedPost);
+router.put("/:id", updatePost);
 router.delete("/:id", deletePost);
 router.post("/:id/like", toggleLike);
 router.post("/:id/bookmark", toggleBookmark);

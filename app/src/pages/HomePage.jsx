@@ -35,7 +35,7 @@ export default function HomePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_270px]">
+      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-5">
           <section className="relative overflow-hidden rounded-2xl bg-ink p-6 text-ink-foreground shadow-sm">
             <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-primary/20" />

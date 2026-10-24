@@ -15,7 +15,7 @@ export default function UserProfilePage() {
 
   const [profile, setProfile] = useState(null);
   const [profileError, setProfileError] = useState("");
-  const { posts, loading, error, updatePost } = usePosts(
+  const { posts, loading, error, updatePost, removePost } = usePosts(
     () => userService.getPosts(username),
     [username],
   );
@@ -52,7 +52,10 @@ export default function UserProfilePage() {
             profile={profile}
             posts={posts}
             onPostChange={updatePost}
-            onFollowToggle={toggleFollow}
+            onPostDelete={removePost}
+            onFollowToggle={
+              me?.role === "admin" || profile.role === "admin" ? undefined : toggleFollow
+            }
           />
         </>
       )}

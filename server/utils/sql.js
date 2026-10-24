@@ -10,6 +10,7 @@ export const USER_FIELDS = `
   p.display_name AS name,
   p.profile_picture AS avatar,
   p.background_picture AS cover,
+  p.background_position AS coverPosition,
   p.bio,
   p.age,
   p.birthday,
@@ -40,6 +41,18 @@ export async function getUserByUsername(username) {
   return rows[0] || null;
 }
 
+export async function getUserByIdentifier(identifier) {
+  const [rows] = await pool.query(
+    `SELECT ${USER_FIELDS}, a.password_hash
+     FROM account a
+     LEFT JOIN profile p ON p.account_id = a.account_id
+     WHERE LOWER(a.username) = LOWER(?) OR LOWER(a.email) = LOWER(?)
+     LIMIT 1`,
+    [identifier, identifier],
+  );
+  return rows[0] || null;
+}
+
 export function serializeUser(user, viewerId) {
   return {
     id: String(user.id),
@@ -50,9 +63,10 @@ export function serializeUser(user, viewerId) {
     bio: user.bio || "",
     gender: user.gender || "Prefer not to say",
     birthday: user.birthday,
-    relationshipStatus: user.relationshipStatus || "",
+    relationshipStatus: user.relationshipStatus || "Prefer not to say",
     avatar: user.avatar || "",
     cover: user.cover || "",
+    coverPosition: user.coverPosition || "50% 50%",
     followersCount: Number(user.followersCount || 0),
     followingCount: Number(user.followingCount || 0),
     isFollowing: Boolean(user.isFollowing),
@@ -73,11 +87,14 @@ export function serializeAuthor(row) {
 export function serializePostRow(row) {
   return {
     id: String(row.post_id),
+    originalPostId: row.original_post_id ? String(row.original_post_id) : null,
     ownerId: String(row.owner_id || row.author_id),
     text: row.content,
+    sharedText: row.original_post_id ? String(row.shared_content || "") : "",
     image: row.image_path || "",
     mediaType: row.media_type || (row.image_path ? "image" : ""),
     createdAt: row.created_at,
+    originalCreatedAt: row.original_created_at || row.created_at,
     updatedAt: row.updated_at,
     author: serializeAuthor(row),
     sharedBy: row.shared_by_id
@@ -86,6 +103,7 @@ export function serializePostRow(row) {
           name: row.shared_by_name || row.shared_by_username,
           username: row.shared_by_username,
           avatar: row.shared_by_avatar || "",
+          sharedAt: row.created_at,
         }
       : null,
     likesCount: Number(row.likes_count || 0),

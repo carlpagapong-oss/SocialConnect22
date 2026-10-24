@@ -3,7 +3,12 @@ import { pool } from "../config/db.js";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
-import { getUserById, getUserByUsername, serializeUser } from "../utils/sql.js";
+import {
+  getUserById,
+  getUserByIdentifier,
+  getUserByUsername,
+  serializeUser,
+} from "../utils/sql.js";
 
 const normalizeUsername = (value = "") => value.trim().replace(/^@/, "").toLowerCase();
 
@@ -75,8 +80,8 @@ export const login = asyncHandler(async (req, res) => {
   const { identifier, password } = req.body;
   if (!identifier || !password) throw new ApiError(400, "Enter your username or email and password");
 
-  const needle = identifier.trim().toLowerCase();
-  const user = await getUserByUsername(needle);
+  const needle = identifier.trim().replace(/^@/, "").toLowerCase();
+  const user = await getUserByIdentifier(needle);
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw new ApiError(401, "Incorrect username/email or password");
   }

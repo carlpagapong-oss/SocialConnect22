@@ -11,6 +11,15 @@ export function timeAgo(dateInput) {
   return new Date(dateInput).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+export function formatPostDate(dateInput) {
+  if (!dateInput) return "";
+  return new Date(dateInput).toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function formatCount(n = 0) {
   return Number(n).toLocaleString();
 }

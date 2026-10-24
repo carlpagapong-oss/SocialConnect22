@@ -9,9 +9,9 @@ import { userService } from "@/services/userService";
 
 export default function ProfilePage() {
   usePageTitle("My profile — Social Connect");
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(user);
-  const { posts, loading, error, reload, updatePost } = usePosts(
+  const { posts, loading, error, reload, updatePost, removePost } = usePosts(
     () => userService.getPosts(user.username),
     [user.username],
   );
@@ -24,12 +24,25 @@ export default function ProfilePage() {
       .catch(() => {});
   }, [user.username]);
 
+  const updateProfile = async (changes) => {
+    const { user: updated } = await userService.updateMe(changes);
+    setProfile(updated);
+    updateUser(updated);
+  };
+
   return (
     <AppShell>
       {loading && <Loading label="Loading your profile..." />}
       {error && <ErrorMessage message={error} onRetry={reload} />}
       {!loading && !error && (
-        <ProfileView own profile={profile} posts={posts} onPostChange={updatePost} />
+        <ProfileView
+          own
+          profile={profile}
+          posts={posts}
+          onPostChange={updatePost}
+          onPostDelete={removePost}
+          onProfileChange={updateProfile}
+        />
       )}
     </AppShell>
   );
