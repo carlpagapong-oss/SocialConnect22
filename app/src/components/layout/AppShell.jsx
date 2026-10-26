@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Bookmark, Home, LogOut, Search, Shield, User } from "lucide-react";
+import { Bookmark, Home, LogOut, Search, Shield, User } from "lucide-react";
 import { Logo, UserAvatar } from "@/components/common/Avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { userService } from "@/services/userService";
@@ -179,10 +179,6 @@ export function AppShell({ children }) {
             )}
           </nav>
           <div className="flex flex-1 items-center justify-end gap-3 pr-1 sm:pr-3 md:pr-4">
-            <button className="relative hidden text-muted-foreground lg:block" aria-label="Notifications">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-destructive" />
-            </button>
             <div ref={profileMenuRef} className="relative shrink-0">
             <button
               type="button"

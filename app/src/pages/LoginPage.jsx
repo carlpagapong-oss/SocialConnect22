@@ -61,11 +61,6 @@ export default function LoginPage() {
             onChange={set("password")}
           />
         </Field>
-        <div className="flex justify-end text-sm">
-          <a href="#" className="text-primary">
-            Forgot password?
-          </a>
-        </div>
         <button disabled={submitting} className={primaryButtonCls}>
           {submitting ? "Logging in..." : "Log in to Social Connect"}
         </button>
