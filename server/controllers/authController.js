@@ -85,6 +85,9 @@ export const login = asyncHandler(async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw new ApiError(401, "Incorrect username/email or password");
   }
+  if (user.account_status === "deactivated") {
+    throw new ApiError(403, "Your account has been deactivated. Please contact support.");
+  }
 
   res.json({ token: generateToken(user.id), user: serializeUser(user, user.id) });
 });

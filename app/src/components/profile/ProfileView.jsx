@@ -30,6 +30,7 @@ export function ProfileView({
   const about = buildAbout(profile);
   const [editing, setEditing] = useState(false);
   const [editingAbout, setEditingAbout] = useState(false);
+  const [editingName, setEditingName] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState("");
   const [error, setError] = useState("");
@@ -41,6 +42,7 @@ export function ProfileView({
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [removingAvatar, setRemovingAvatar] = useState(false);
   const [bio, setBio] = useState(profile.bio || "");
+  const [displayName, setDisplayName] = useState(profile.name || "");
   const [aboutForm, setAboutForm] = useState({
     birthday: profile.birthday ? String(profile.birthday).slice(0, 10) : "",
     gender: profile.gender || "",
@@ -51,6 +53,10 @@ export function ProfileView({
   const coverDrag = useRef(null);
   const coverMenuRef = useRef(null);
   const avatarMenuRef = useRef(null);
+
+  useEffect(() => {
+    setDisplayName(profile.name || "");
+  }, [profile.name]);
 
   useEffect(() => {
     const handleOutsideMenus = (event) => {
@@ -210,6 +216,24 @@ export function ProfileView({
     try {
       await onProfileChange({ bio });
       setEditing(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveDisplayName = async (event) => {
+    event.preventDefault();
+    if (!displayName.trim()) {
+      setError("Name cannot be empty");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await onProfileChange({ name: displayName.trim() });
+      setEditingName(false);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -393,7 +417,23 @@ export function ProfileView({
               </button>
             ) : null}
           </div>
-          <h1 className="mt-4 text-2xl font-extrabold">{profile.name}</h1>
+          <div className="mt-4 flex items-center gap-2">
+            <h1 className="text-2xl font-extrabold">{profile.name}</h1>
+            {own && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDisplayName(profile.name || "");
+                  setError("");
+                  setEditingName(true);
+                }}
+                className="rounded p-1 text-primary hover:bg-muted"
+                aria-label="Edit display name"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">
             @{profile.username} · <span className="text-success">Active</span>
           </p>
@@ -482,6 +522,45 @@ export function ProfileView({
                 />
               </label>
             </div>
+            <button
+              type="submit"
+              disabled={saving}
+              className="mt-5 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save changes"}
+            </button>
+          </form>
+        </div>
+      )}
+      {editingName && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setEditingName(false)}
+        >
+          <form
+            onSubmit={saveDisplayName}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">Edit display name</h2>
+              <button type="button" onClick={() => setEditingName(false)} aria-label="Close edit name">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <label className="block text-sm font-medium">
+                Name
+                <input
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  className="mt-1 w-full rounded-lg border bg-background p-2.5"
+                  maxLength={80}
+                  autoFocus
+                />
+              </label>
+            </div>
+            {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
             <button
               type="submit"
               disabled={saving}

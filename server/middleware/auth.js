@@ -24,6 +24,9 @@ export const protect = asyncHandler(async (req, _res, next) => {
   if (!user || user.account_status === "disabled") {
     throw new ApiError(401, "This account no longer exists");
   }
+  if (user.account_status === "deactivated") {
+    throw new ApiError(403, "Your account has been deactivated. Please contact support.");
+  }
 
   req.user = user;
   next();

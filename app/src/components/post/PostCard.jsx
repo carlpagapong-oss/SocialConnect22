@@ -206,14 +206,26 @@ export function PostCard({ post, onChange, onDelete, onCommentsClick, onImageCli
         aria-label={post.sharedBy ? "Open original post" : undefined}
       >
         <div className="flex gap-3">
-          <Link to={`/user/${post.author.username}`}>
+          <Link
+            to={`/user/${post.author.username}`}
+            className="group relative transition-transform hover:scale-[1.02]"
+            title={`View ${post.author.name}'s profile`}
+          >
             <UserAvatar src={post.author.avatar} />
+            <span className="absolute -right-1 -top-1 hidden h-2 w-2 rounded-full bg-primary ring-2 ring-card group-hover:block" />
           </Link>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between">
               <div>
-                <Link to={`/user/${post.author.username}`} className="text-sm font-semibold">
-                  {post.author.name}
+                <Link
+                  to={`/user/${post.author.username}`}
+                  className="group inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+                  title={`View ${post.author.name}'s profile`}
+                >
+                  <span>{post.author.name}</span>
+                  <span className="text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                    →
+                  </span>
                 </Link>
                 <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                   {formatPostDate(post.originalCreatedAt || post.createdAt)} ·{" "}
@@ -459,6 +471,7 @@ export function PostCard({ post, onChange, onDelete, onCommentsClick, onImageCli
           liked={post.liked}
           onLike={toggleLike}
           onCommentAdded={() => update({ commentCount: post.commentCount + 1 })}
+          onCommentRemoved={() => update({ commentCount: Math.max(0, post.commentCount - 1) })}
           onClose={() => setOpen(false)}
         />
       )}

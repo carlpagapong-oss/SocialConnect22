@@ -23,7 +23,7 @@ export const updateAccountStatus = asyncHandler(async (req, res) => {
   const accountId = Number(req.params.id);
   const { status } = req.body;
 
-  if (!Number.isInteger(accountId) || !["active", "disabled"].includes(status)) {
+  if (!Number.isInteger(accountId) || !["active", "disabled", "deactivated"].includes(status)) {
     throw new ApiError(400, "A valid account ID and status are required");
   }
   if (accountId === Number(req.user.id)) {

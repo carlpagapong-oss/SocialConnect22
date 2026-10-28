@@ -73,7 +73,13 @@ export default function PostPage() {
                   onCommentAdded={() =>
                     setPost((current) => ({
                       ...current,
-                      commentCount: current.commentCount + 1,
+                      commentCount: (current.commentCount || 0) + 1,
+                    }))
+                  }
+                  onCommentRemoved={() =>
+                    setPost((current) => ({
+                      ...current,
+                      commentCount: Math.max(0, (current.commentCount || 0) - 1),
                     }))
                   }
                 />

@@ -28,7 +28,7 @@ export default function AdminPage() {
   }, []);
 
   const changeStatus = async (account) => {
-    const status = account.account_status === "active" ? "disabled" : "active";
+    const status = account.account_status === "active" ? "deactivated" : "active";
     setUpdatingId(account.id);
     setError("");
     try {
@@ -75,10 +75,10 @@ export default function AdminPage() {
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                           active
                             ? "bg-green-100 text-green-700"
-                            : "bg-muted text-muted-foreground"
+                            : "bg-red-100 text-red-700"
                         }`}
                       >
-                        {active ? "Active" : "Inactive"}
+                        {active ? "Active" : "Deactivated"}
                       </span>
                       <button
                         type="button"

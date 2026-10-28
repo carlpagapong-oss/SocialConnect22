@@ -26,7 +26,14 @@ export default function LoginPage() {
       const user = await login(form.identifier, form.password);
       navigate(user.role === "admin" ? "/admin/accounts" : "/home");
     } catch (err) {
-      setError(err.status === 401 ? "Username or password is incorrect." : err.message);
+      const msg = err?.message || "";
+      if (err?.status === 403 || /deactivat/i.test(msg)) {
+        setError("Your account has been deactivated. Please contact support.");
+      } else if (err?.status === 401) {
+        setError("Username or password is incorrect.");
+      } else {
+        setError(msg || "Something went wrong. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }

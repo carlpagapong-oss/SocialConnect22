@@ -17,4 +17,5 @@ export const postService = {
   getBookmarks: () => api.get("/posts/bookmarks"),
   getComments: (id) => api.get(`/posts/${id}/comments`),
   addComment: (id, text) => api.post(`/posts/${id}/comments`, { text }),
+  deleteComment: (commentId) => api.delete(`/posts/comments/${commentId}`),
 };

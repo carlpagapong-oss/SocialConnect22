@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   addComment,
   createPost,
+  deleteComment,
   deletePost,
   getBookmarks,
   getComments,
@@ -33,6 +34,7 @@ const router = Router();
 
 router.use(protect);
 
+router.delete("/comments/:commentId", deleteComment);
 router.post("/upload", upload.single("media"), uploadPostMedia);
 router.route("/").get(getFeed).post(createPost);
 router.get("/bookmarks", getBookmarks); // must come before "/:id"

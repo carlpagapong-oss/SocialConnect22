@@ -9,15 +9,15 @@ import { randomUUID } from "node:crypto";
 export const POST_FIELDS = `
   p.post_id, p.account_id AS owner_id, p.original_post_id,
   p.content AS shared_content,
-  COALESCE(op.account_id, p.account_id) AS author_id,
-  COALESCE(op.content, p.content) AS content,
-  COALESCE(op.image_path, p.image_path) AS image_path,
-  COALESCE(op.media_type, p.media_type) AS media_type,
+  CASE WHEN p.original_post_id IS NULL THEN p.account_id ELSE op.account_id END AS author_id,
+  CASE WHEN p.original_post_id IS NULL THEN p.content ELSE op.content END AS content,
+  CASE WHEN p.original_post_id IS NULL THEN p.image_path ELSE op.image_path END AS image_path,
+  CASE WHEN p.original_post_id IS NULL THEN p.media_type ELSE op.media_type END AS media_type,
   p.created_at, p.updated_at,
-  COALESCE(op.created_at, p.created_at) AS original_created_at,
-  COALESCE(oa.username, a.username) AS author_username,
-  COALESCE(opr.display_name, pr.display_name) AS author_name,
-  COALESCE(opr.profile_picture, pr.profile_picture) AS author_avatar,
+  CASE WHEN p.original_post_id IS NULL THEN p.created_at ELSE op.created_at END AS original_created_at,
+  CASE WHEN p.original_post_id IS NULL THEN a.username ELSE oa.username END AS author_username,
+  CASE WHEN p.original_post_id IS NULL THEN pr.display_name ELSE opr.display_name END AS author_name,
+  CASE WHEN p.original_post_id IS NULL THEN pr.profile_picture ELSE opr.profile_picture END AS author_avatar,
   CASE WHEN p.original_post_id IS NULL THEN NULL ELSE p.account_id END AS shared_by_id,
   CASE WHEN p.original_post_id IS NULL THEN NULL ELSE a.username END AS shared_by_username,
   CASE WHEN p.original_post_id IS NULL THEN NULL ELSE pr.display_name END AS shared_by_name,
@@ -296,4 +296,18 @@ export const addComment = asyncHandler(async (req, res) => {
       },
     },
   });
+});
+
+export const deleteComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const [rows] = await pool.query(
+    "SELECT comment_id, account_id FROM comment WHERE comment_id = ?",
+    [commentId],
+  );
+  if (!rows.length) throw new ApiError(404, "Comment not found");
+  if (String(rows[0].account_id) !== String(req.user.id)) {
+    throw new ApiError(403, "You can only delete your own comments");
+  }
+  await pool.query("DELETE FROM comment WHERE comment_id = ?", [commentId]);
+  res.json({ success: true });
 });

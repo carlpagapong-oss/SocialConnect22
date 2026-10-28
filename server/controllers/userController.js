@@ -68,6 +68,9 @@ export const getUserPosts = asyncHandler(async (req, res) => {
 });
 
 export const toggleFollow = asyncHandler(async (req, res) => {
+  if (req.user.account_status === "deactivated") {
+    throw new ApiError(403, "Your account has been deactivated. Please contact support.");
+  }
   if (req.user.role === "admin") {
     throw new ApiError(403, "Administrator accounts cannot follow people");
   }
@@ -106,12 +109,15 @@ export const updateMe = asyncHandler(async (req, res) => {
 
   const allowed = {
     name: "display_name",
+    displayName: "display_name",
     bio: "bio",
     gender: "gender",
     birthday: "birthday",
     relationshipStatus: "relation_status",
     avatar: "profile_picture",
+    profilePicture: "profile_picture",
     cover: "background_picture",
+    backgroundPicture: "background_picture",
     coverPosition: "background_position",
   };
   const changes = Object.entries(allowed)
@@ -119,8 +125,18 @@ export const updateMe = asyncHandler(async (req, res) => {
     .map(([key, column]) => [column, req.body[key]]);
 
   if (req.body.coverPosition !== undefined) {
-    const position = /^(\d{1,3})%\s+(\d{1,3})%$/.exec(req.body.coverPosition);
-    if (!position || position.slice(1).some((value) => Number(value) > 100)) {
+    const position = req.body.coverPosition;
+    // Accept any position format like "X% Y%" with numbers (including decimals)
+    if (typeof position !== "string") {
+      throw new ApiError(400, "Choose a valid cover photo position");
+    }
+    const match = /^(-?\d+(?:\.\d+)?)%\s+(-?\d+(?:\.\d+)?)%$/.exec(position.trim());
+    if (!match) {
+      throw new ApiError(400, "Choose a valid cover photo position");
+    }
+    const x = Number(match[1]);
+    const y = Number(match[2]);
+    if (Number.isNaN(x) || Number.isNaN(y) || x < 0 || x > 100 || y < 0 || y > 100) {
       throw new ApiError(400, "Choose a valid cover photo position");
     }
   }
