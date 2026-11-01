@@ -40,6 +40,8 @@ export function AuthProvider({ children }) {
       user,
       loading,
       isAuthenticated: Boolean(user),
+      startLogin: (identifier, password) => authService.login(identifier, password),
+      completeLogin: handleAuthSuccess,
       login: async (identifier, password) =>
         handleAuthSuccess(await authService.login(identifier, password)),
       register: async (payload) => handleAuthSuccess(await authService.register(payload)),

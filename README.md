@@ -250,6 +250,12 @@ These accounts are for demonstration purposes only:
 The Jaik account cannot log in while it is deactivated. An administrator must
 activate it from the administrator accounts page before it can be used.
 
+After a valid password login, the app shows a demo authentication-code step.
+Enter any six-digit number to continue; no email is sent and this is not real
+multi-factor authentication. This flow is for local demonstration only and
+must be replaced with a real server-side verification provider before
+deployment.
+
 ## Future Supabase web version
 
 The sibling `SocialConnectWeb` directory contains the browser deployment:
