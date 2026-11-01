@@ -86,7 +86,10 @@ export const login = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Incorrect username/email or password");
   }
   if (user.account_status === "deactivated") {
-    throw new ApiError(403, "Your account has been deactivated. Please contact support.");
+    throw new ApiError(
+      403,
+      "Your account has been deactivated by an administrator. Please contact the admin.",
+    );
   }
 
   res.json({ token: generateToken(user.id), user: serializeUser(user, user.id) });

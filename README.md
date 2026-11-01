@@ -238,6 +238,18 @@ WHERE username = 'your-admin-username';
 Administrator authorization is enforced by the API with the `admin` role; hiding
 the administrator link in the frontend is not the security control.
 
+## Demo accounts
+
+These accounts are for demonstration purposes only:
+
+| Account | Username | Password | Status |
+| --- | --- | --- | --- |
+| CarlTZy | `carl123` | `carl123456789` | Active |
+| Jaik leonard | `jaik123` | `jaik123456789` | Deactivated |
+
+The Jaik account cannot log in while it is deactivated. An administrator must
+activate it from the administrator accounts page before it can be used.
+
 ## Future Supabase web version
 
 The sibling `SocialConnectWeb` directory contains the browser deployment:

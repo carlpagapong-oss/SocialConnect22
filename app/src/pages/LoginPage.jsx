@@ -28,7 +28,9 @@ export default function LoginPage() {
     } catch (err) {
       const msg = err?.message || "";
       if (err?.status === 403 || /deactivat/i.test(msg)) {
-        setError("Your account has been deactivated. Please contact support.");
+        setError(
+          "Your account has been deactivated by an administrator. Please contact the admin.",
+        );
       } else if (err?.status === 401) {
         setError("Username or password is incorrect.");
       } else {
