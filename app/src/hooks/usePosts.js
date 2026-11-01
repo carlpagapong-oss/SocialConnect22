@@ -31,6 +31,10 @@ export function usePosts(fetcher, deps = []) {
     [],
   );
   const removePost = useCallback((id) => setPosts((prev) => prev.filter((p) => p.id !== id)), []);
+  const removePosts = useCallback(
+    (shouldRemove) => setPosts((prev) => prev.filter((post) => !shouldRemove(post))),
+    [],
+  );
 
-  return { posts, loading, error, reload: load, addPost, updatePost, removePost };
+  return { posts, loading, error, reload: load, addPost, updatePost, removePost, removePosts };
 }

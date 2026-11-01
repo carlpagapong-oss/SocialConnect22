@@ -9,8 +9,8 @@ Inspection basis: the checked-out `SocialConnect22` source, `server/social_conne
 - `app/` is a Vite React 19 application.
 - `app/electron.cjs` is the Electron main process. It creates a browser window with `nodeIntegration: false` and `contextIsolation: true`, then loads `app/dist/index.html`.
 - `app/src/main.jsx` selects `HashRouter` for `file:` URLs and `BrowserRouter` for normal HTTP URLs. `App.jsx` defines guest, protected, profile, post, bookmarks, people, and administrator routes.
-- The React client calls the API through `app/src/services/api.js`. A bearer JWT is stored in `localStorage`; the packaged desktop app defaults to `http://localhost:5000/api`.
-- Vite proxies `/api` to `http://localhost:5000` during development. The `base: "./"` setting supports the Electron file URL.
+- The React client calls the API through `app/src/services/api.js`. A bearer JWT is stored in `localStorage`; the packaged desktop app defaults to `http://localhost:5001/api`.
+- Vite proxies `/api` to `http://localhost:5001` during development. The `base: "./"` setting supports the Electron file URL.
 
 ### Backend and database
 

@@ -15,7 +15,7 @@ import { UserAvatar } from "@/components/common/Avatar";
 export default function HomePage() {
   usePageTitle("Home — Social Connect");
   const { user } = useAuth();
-  const { posts, loading, error, reload, addPost, updatePost, removePost } = usePosts(
+  const { posts, loading, error, reload, addPost, updatePost, removePost, removePosts } = usePosts(
     postService.getFeed,
   );
   const [suggestions, setSuggestions] = useState([]);
@@ -32,6 +32,16 @@ export default function HomePage() {
     window.addEventListener("socialconnect:post-shared", handleShared);
     return () => window.removeEventListener("socialconnect:post-shared", handleShared);
   }, [addPost]);
+
+  useEffect(() => {
+    const handleDeleted = (event) => {
+      const { id, originalPostId } = event.detail || {};
+      if (!id) return;
+      removePosts((post) => post.id === id || (!originalPostId && post.originalPostId === id));
+    };
+    window.addEventListener("socialconnect:post-deleted", handleDeleted);
+    return () => window.removeEventListener("socialconnect:post-deleted", handleDeleted);
+  }, [removePosts]);
 
   return (
     <AppShell>
@@ -107,9 +117,7 @@ export default function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-75">
               Social Connect
             </p>
-            <p className="mt-2 text-lg font-bold leading-snug">
-              Be kind. Be curious. Be yourself.
-            </p>
+            <p className="mt-2 text-lg font-bold leading-snug">Be kind. Be curious. Be yourself.</p>
             <div className="mt-4 flex gap-1.5">
               <span className="h-1.5 w-8 rounded-full bg-primary-foreground/80" />
               <span className="h-1.5 w-4 rounded-full bg-primary-foreground/50" />

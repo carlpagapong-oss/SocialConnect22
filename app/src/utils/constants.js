@@ -2,7 +2,7 @@ export const TOKEN_KEY = "socialconnect_token";
 
 export const API_URL =
   import.meta.env.VITE_API_URL ||
-  (window.location.protocol === "file:" ? "http://localhost:5000/api" : "/api");
+  (window.location.protocol === "file:" ? "http://localhost:5001/api" : "/api");
 
 export const GENDERS = ["Male", "Female"];
 

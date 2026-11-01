@@ -113,7 +113,7 @@ Create `server/.env` based on [server/.env.example](server/.env.example):
 
 ```dotenv
 NODE_ENV=development
-PORT=5000
+PORT=5001
 DB_HOST=127.0.0.1
 DB_PORT=3307
 DB_USER=root
@@ -163,7 +163,7 @@ npm install
 npm run dev
 ```
 
-The API runs at `http://localhost:5000`.
+The API runs at `http://localhost:5001`.
 
 In a second terminal, start the React frontend:
 
@@ -216,7 +216,7 @@ npm run desktop
 
 The `desktop` script builds the Vite frontend and opens the build in Electron.
 Electron uses hash-based routing for the local `file:` URL. The packaged
-frontend calls `http://localhost:5000/api` unless `VITE_API_URL` is configured.
+frontend calls `http://localhost:5001/api` unless `VITE_API_URL` is configured.
 
 The Electron window disables Node integration and enables context isolation.
 The React frontend therefore communicates with the Express API rather than

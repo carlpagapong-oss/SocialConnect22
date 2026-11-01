@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5173,
     // Forward API calls and uploaded files to the Express server during development.
     proxy: {
-      "/api": "http://localhost:5000",
+      "/api": "http://localhost:5001",
     },
   },
 });

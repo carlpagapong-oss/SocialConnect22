@@ -73,6 +73,14 @@ export function PostCard({ post, onChange, onDelete, onCommentsClick, onImageCli
     try {
       await postService.remove(post.id);
       onDelete?.(post.id);
+      window.dispatchEvent(
+        new CustomEvent("socialconnect:post-deleted", {
+          detail: {
+            id: post.id,
+            originalPostId: post.originalPostId,
+          },
+        }),
+      );
     } catch {
       setMenuOpen(false);
     } finally {
