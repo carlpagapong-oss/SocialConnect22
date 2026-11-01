@@ -6,6 +6,7 @@ import generateToken from "../utils/generateToken.js";
 import {
   getUserById,
   getUserByIdentifier,
+  getUserByEmail,
   getUserByUsername,
   serializeUser,
 } from "../utils/sql.js";
@@ -93,6 +94,33 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   res.json({ token: generateToken(user.id), user: serializeUser(user, user.id) });
+});
+
+export const requestPasswordReset = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) throw new ApiError(400, "Enter your registered email");
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await getUserByEmail(normalizedEmail);
+  if (!user) throw new ApiError(404, "This email is not registered in the app");
+
+  res.json({ email: user.email });
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) throw new ApiError(400, "Email and password are required");
+  if (password.length < 8) throw new ApiError(400, "Password must be at least 8 characters");
+
+  const user = await getUserByEmail(email.trim().toLowerCase());
+  if (!user) throw new ApiError(404, "This email is not registered in the app");
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  await pool.query("UPDATE account SET password_hash = ? WHERE account_id = ?", [
+    passwordHash,
+    user.id,
+  ]);
+  res.json({ message: "Password updated successfully" });
 });
 
 export const getMe = asyncHandler(async (req, res) => {

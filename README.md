@@ -70,7 +70,11 @@ The implemented application currently supports:
 - Bookmarks.
 - Administrator account activation and deactivation.
 
-The current source does not implement a forgot-password flow.
+The application includes a demo forgot-password flow. It verifies a registered
+email, displays a verification-code step, and lets the user set a new
+password. The code delivery and validation are simulated for local
+demonstration and must be replaced with a real server-side verification
+provider before deployment.
 
 ## Database
 
@@ -178,6 +182,8 @@ The API route groups are:
 | --- | --- | --- |
 | POST | `/api/auth/register` | Create an account |
 | POST | `/api/auth/login` | Log in with username or email |
+| POST | `/api/auth/forgot-password` | Start a password reset |
+| POST | `/api/auth/reset-password` | Save a new password |
 | GET | `/api/auth/me` | Return the current authenticated account |
 | GET / POST | `/api/posts` | Read the feed or create a post |
 | GET | `/api/posts/:id` | Read one post |

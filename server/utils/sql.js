@@ -53,6 +53,17 @@ export async function getUserByIdentifier(identifier) {
   return rows[0] || null;
 }
 
+export async function getUserByEmail(email) {
+  const [rows] = await pool.query(
+    `SELECT ${USER_FIELDS}, a.password_hash
+     FROM account a
+     LEFT JOIN profile p ON p.account_id = a.account_id
+     WHERE LOWER(a.email) = LOWER(?) LIMIT 1`,
+    [email],
+  );
+  return rows[0] || null;
+}
+
 export function serializeUser(user, viewerId) {
   return {
     id: String(user.id),
