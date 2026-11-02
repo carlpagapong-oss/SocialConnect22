@@ -10,6 +10,11 @@ import {
   getUserByUsername,
   serializeUser,
 } from "../utils/sql.js";
+import {
+  issueLoginOtp,
+  resendLoginOtp,
+  verifyLoginOtp,
+} from "../utils/loginOtp.js";
 
 const normalizeUsername = (value = "") => value.trim().replace(/^@/, "").toLowerCase();
 
@@ -93,7 +98,35 @@ export const login = asyncHandler(async (req, res) => {
     );
   }
 
-  res.json({ token: generateToken(user.id), user: serializeUser(user, user.id) });
+  res.json({
+    ...issueLoginOtp(user.id, user.email),
+    token: generateToken(user.id),
+    user: serializeUser(user, user.id),
+  });
+});
+
+export const verifyLoginCode = asyncHandler(async (req, res) => {
+  const { challengeId, code } = req.body;
+  if (!challengeId || !/^\d{6}$/.test(code || "")) {
+    throw new ApiError(400, "Enter the 6-digit authentication code");
+  }
+
+  const accountId = verifyLoginOtp(challengeId, code);
+  const user = await getUserById(accountId);
+  if (!user) throw new ApiError(401, "Your account could not be found");
+
+  res.json({ token: generateToken(accountId), user: serializeUser(user, accountId) });
+});
+
+export const resendLoginCode = asyncHandler(async (req, res) => {
+  const { challengeId } = req.body;
+  if (!challengeId) throw new ApiError(400, "Authentication session is required");
+
+  const accountId = resendLoginOtp(challengeId);
+  const user = await getUserById(accountId);
+  if (!user) throw new ApiError(401, "Your account could not be found");
+
+  res.json(issueLoginOtp(user.id, user.email));
 });
 
 export const requestPasswordReset = asyncHandler(async (req, res) => {
@@ -104,7 +137,24 @@ export const requestPasswordReset = asyncHandler(async (req, res) => {
   const user = await getUserByEmail(normalizedEmail);
   if (!user) throw new ApiError(404, "This email is not registered in the app");
 
-  res.json({ email: user.email });
+  res.json({
+    ...issueLoginOtp(user.id, user.email),
+    email: user.email,
+  });
+});
+
+export const resendPasswordResetCode = asyncHandler(async (req, res) => {
+  const { challengeId } = req.body;
+  if (!challengeId) throw new ApiError(400, "Authentication session is required");
+
+  const accountId = resendLoginOtp(challengeId);
+  const user = await getUserById(accountId);
+  if (!user) throw new ApiError(404, "This email is not registered in the app");
+
+  res.json({
+    ...issueLoginOtp(user.id, user.email),
+    email: user.email,
+  });
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {

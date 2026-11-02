@@ -25,6 +25,15 @@ export default function LoginPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [successVisible, setSuccessVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [secondsRemaining, setSecondsRemaining] = useState(0);
+
+  const normalizeLoginChallenge = (response) => {
+    const expiresAt = Number(response.expiresAt);
+    return {
+      ...response,
+      expiresAt: Number.isFinite(expiresAt) ? expiresAt : Date.now() + 120000,
+    };
+  };
 
   useEffect(() => {
     if (!successMessage) return undefined;
@@ -39,6 +48,22 @@ export default function LoginPage() {
     };
   }, [successMessage]);
 
+  useEffect(() => {
+    if (view !== "verification" || !pendingAuth?.response?.expiresAt) return undefined;
+
+    const updateRemaining = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((pendingAuth.response.expiresAt - Date.now()) / 1000),
+      );
+      setSecondsRemaining(remaining);
+    };
+
+    updateRemaining();
+    const timer = window.setInterval(updateRemaining, 1000);
+    return () => window.clearInterval(timer);
+  }, [pendingAuth, view]);
+
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handlePasswordSubmit = async (e) => {
@@ -46,7 +71,11 @@ export default function LoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      setPendingAuth({ type: "login", response: await startLogin(form.identifier, form.password) });
+      const response = await startLogin(form.identifier, form.password);
+      setPendingAuth({
+        type: "login",
+        response: normalizeLoginChallenge(response),
+      });
       setVerificationCode("");
       setView("verification");
     } catch (err) {
@@ -65,7 +94,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleVerificationSubmit = (e) => {
+  const handleVerificationSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!/^\d{6}$/.test(verificationCode)) {
@@ -73,12 +102,64 @@ export default function LoginPage() {
       return;
     }
 
+    if (secondsRemaining <= 0) {
+        setError("This authentication code has expired. Request a new one.");
+        return;
+    }
+
     if (pendingAuth.type === "login") {
-      const user = completeLogin(pendingAuth.response);
-      navigate(user.role === "admin" ? "/admin/accounts" : "/home");
+      setSubmitting(true);
+      try {
+        const response = pendingAuth.response.token
+          ? pendingAuth.response
+          : await authService.verifyLoginCode(
+              pendingAuth.response.challengeId,
+              verificationCode,
+            );
+        const user = completeLogin(response);
+        navigate(user.role === "admin" ? "/admin/accounts" : "/home");
+      } catch (err) {
+        if (err?.status === 410) setSecondsRemaining(0);
+        setError(err?.message || "Unable to verify the authentication code.");
+      } finally {
+        setSubmitting(false);
+      }
     } else {
       setView("reset-password");
       setError("");
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!pendingAuth?.response?.expiresAt || secondsRemaining > 0) return;
+
+    setError("");
+    setSubmitting(true);
+    try {
+      let response;
+      if (pendingAuth.type === "login") {
+        response = pendingAuth.response.challengeId
+          ? await authService.resendLoginCode(pendingAuth.response.challengeId)
+          : await startLogin(form.identifier, form.password);
+      } else {
+        try {
+          response = await authService.resendPasswordResetCode(
+            pendingAuth.response.challengeId,
+          );
+        } catch (err) {
+          if (err?.status !== 404) throw err;
+          response = await authService.requestPasswordReset(resetEmail);
+        }
+      }
+      setPendingAuth({
+        type: pendingAuth.type,
+        response: normalizeLoginChallenge(response),
+      });
+      setVerificationCode("");
+    } catch (err) {
+      setError(err?.message || "Unable to resend the authentication code.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -113,7 +194,7 @@ export default function LoginPage() {
     try {
       const response = await authService.requestPasswordReset(resetEmail);
       setResetRequest({ email: response.email });
-      setPendingAuth({ type: "reset" });
+      setPendingAuth({ type: "reset", response: normalizeLoginChallenge(response) });
       setVerificationCode("");
       setView("verification");
     } catch (err) {
@@ -174,6 +255,14 @@ export default function LoginPage() {
             <br />
             Enter the code below.
           </p>
+          {pendingAuth?.response?.expiresAt && (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Code expires in{" "}
+              <span className="font-semibold text-foreground">
+                {Math.floor(secondsRemaining / 60)}:{String(secondsRemaining % 60).padStart(2, "0")}
+              </span>
+            </p>
+          )}
           <form className="mt-8 space-y-6" onSubmit={handleVerificationSubmit}>
             <FormError id="login-error" message={error} />
             <Field label="Verification code">
@@ -198,12 +287,22 @@ export default function LoginPage() {
                 ))}
               </div>
             </Field>
-            <button type="submit" className={primaryButtonCls}>
-              Verify code
+            <button disabled={submitting} type="submit" className={primaryButtonCls}>
+              {submitting ? "Verifying..." : "Verify code"}
             </button>
-            <p className="text-center text-xs text-muted-foreground">
-              Didn&apos;t receive the code? <button type="button" className="font-medium text-primary hover:underline">Resend code</button>
-            </p>
+            {pendingAuth?.response?.expiresAt && (
+              <p className="text-center text-xs text-muted-foreground">
+                Didn&apos;t receive the code?{" "}
+                <button
+                  type="button"
+                  disabled={submitting || secondsRemaining > 0}
+                  className="font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={handleResendCode}
+                >
+                  Resend code
+                </button>
+              </p>
+            )}
             <button
               type="button"
               className="w-full text-sm text-muted-foreground hover:text-foreground"

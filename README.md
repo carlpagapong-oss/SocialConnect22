@@ -55,7 +55,8 @@ SocialConnectWeb/                 Separate browser/Supabase project
 
 The implemented application currently supports:
 
-- Account registration and login using username or email.
+- Account registration and login using username or email, with a two-minute
+  demo email authentication code and resend flow.
 - JWT-based session restoration and logout.
 - Profile viewing and profile editing.
 - Profile and cover images.
@@ -74,6 +75,11 @@ The application includes a demo forgot-password flow. It verifies a registered
 email, displays a verification-code step, and lets the user set a new
 password. The code delivery and validation are simulated for local
 demonstration and must be replaced with a real server-side verification
+provider before deployment.
+
+Login authentication codes are accepted as any six-digit value for this
+demonstration, expire after two minutes, and can be requested again after
+expiration. Connect the code issuer and validation to Gmail or another email
 provider before deployment.
 
 ## Database
@@ -181,8 +187,11 @@ The API route groups are:
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | POST | `/api/auth/register` | Create an account |
-| POST | `/api/auth/login` | Log in with username or email |
+| POST | `/api/auth/login` | Start login and issue a two-minute authentication code |
+| POST | `/api/auth/login/verify` | Verify the login authentication code |
+| POST | `/api/auth/login/resend` | Resend an expired login authentication code |
 | POST | `/api/auth/forgot-password` | Start a password reset |
+| POST | `/api/auth/forgot-password/resend` | Resend an expired password reset code |
 | POST | `/api/auth/reset-password` | Save a new password |
 | GET | `/api/auth/me` | Return the current authenticated account |
 | GET / POST | `/api/posts` | Read the feed or create a post |
