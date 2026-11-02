@@ -99,6 +99,7 @@ The schema contains these tables:
 The schema and relationships are documented in:
 
 - [MySQL database schema](server/social_connect_schema.sql)
+- [MySQL setup, migration, and transfer guide](DATABASE.md)
 - [Current MySQL ERD](docs/socialconnect-mysql-erd.md)
 - [Supabase ERD proposal](../SocialConnectWeb/docs/socialconnect-supabase-erd.md)
 - [MySQL-to-Supabase mapping](../SocialConnectWeb/docs/mysql-to-supabase-mapping.md)
