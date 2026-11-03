@@ -6,25 +6,51 @@ export const MAX_LOGIN_OTP_RESENDS = 3;
 export const LOGIN_OTP_RESEND_COOLDOWN_SECONDS = 300;
 
 const challenges = new Map();
+const accountChallenges = new Map();
 
 const removeExpiredChallenges = () => {
   const now = Date.now();
   for (const [challengeId, challenge] of challenges) {
-    if (challenge.expiresAt <= now) challenges.delete(challengeId);
+    if (challenge.expiresAt <= now && (!challenge.cooldownUntil || challenge.cooldownUntil <= now)) {
+      challenges.delete(challengeId);
+      if (accountChallenges.get(challenge.accountId) === challengeId) {
+        accountChallenges.delete(challenge.accountId);
+      }
+    }
   }
 };
 
 export function issueLoginOtp(accountId, email, resendCount = 0) {
   removeExpiredChallenges();
+  const existingChallengeId = accountChallenges.get(accountId);
+  const existingChallenge = challenges.get(existingChallengeId);
+  const now = Date.now();
+  if (
+    existingChallenge &&
+    (existingChallenge.expiresAt > now ||
+      (existingChallenge.cooldownUntil && existingChallenge.cooldownUntil > now))
+  ) {
+    return {
+      challengeId: existingChallengeId,
+      code: existingChallenge.code,
+      email,
+      expiresAt: existingChallenge.expiresAt,
+      resendCount: existingChallenge.resendCount,
+      resendsRemaining: MAX_LOGIN_OTP_RESENDS - existingChallenge.resendCount,
+      cooldownUntil: existingChallenge.cooldownUntil,
+    };
+  }
+
   const challengeId = randomUUID();
   const code = String(randomInt(0, 1000000)).padStart(6, "0");
-  const expiresAt = Date.now() + LOGIN_OTP_TTL_SECONDS * 1000;
+  const expiresAt = now + LOGIN_OTP_TTL_SECONDS * 1000;
   const cooldownUntil =
     resendCount >= MAX_LOGIN_OTP_RESENDS
-      ? Date.now() + LOGIN_OTP_RESEND_COOLDOWN_SECONDS * 1000
+      ? now + LOGIN_OTP_RESEND_COOLDOWN_SECONDS * 1000
       : null;
 
   challenges.set(challengeId, { accountId, code, expiresAt, resendCount, cooldownUntil });
+  accountChallenges.set(accountId, challengeId);
 
   return {
     challengeId,
@@ -42,7 +68,12 @@ export function verifyLoginOtp(challengeId, submittedCode) {
   if (!challenge) throw new ApiError(400, "This authentication code is invalid");
 
   if (challenge.expiresAt <= Date.now()) {
-    challenges.delete(challengeId);
+    if (!challenge.cooldownUntil || challenge.cooldownUntil <= Date.now()) {
+      challenges.delete(challengeId);
+      if (accountChallenges.get(challenge.accountId) === challengeId) {
+        accountChallenges.delete(challenge.accountId);
+      }
+    }
     throw new ApiError(410, "This authentication code has expired. Request a new one");
   }
 
@@ -51,6 +82,9 @@ export function verifyLoginOtp(challengeId, submittedCode) {
   }
 
   challenges.delete(challengeId);
+  if (accountChallenges.get(challenge.accountId) === challengeId) {
+    accountChallenges.delete(challenge.accountId);
+  }
   return challenge.accountId;
 }
 
@@ -69,6 +103,9 @@ export function resendLoginOtp(challengeId) {
   }
 
   challenges.delete(challengeId);
+  if (accountChallenges.get(challenge.accountId) === challengeId) {
+    accountChallenges.delete(challenge.accountId);
+  }
   return {
     accountId: challenge.accountId,
     resendCount:
