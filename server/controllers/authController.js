@@ -100,8 +100,6 @@ export const login = asyncHandler(async (req, res) => {
 
   res.json({
     ...issueLoginOtp(user.id, user.email),
-    token: generateToken(user.id),
-    user: serializeUser(user, user.id),
   });
 });
 

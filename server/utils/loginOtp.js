@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import ApiError from "./ApiError.js";
 
 export const LOGIN_OTP_TTL_SECONDS = 120;
@@ -15,24 +15,30 @@ const removeExpiredChallenges = () => {
 export function issueLoginOtp(accountId, email) {
   removeExpiredChallenges();
   const challengeId = randomUUID();
+  const code = String(randomInt(0, 1000000)).padStart(6, "0");
   const expiresAt = Date.now() + LOGIN_OTP_TTL_SECONDS * 1000;
 
-  challenges.set(challengeId, { accountId, expiresAt });
+  challenges.set(challengeId, { accountId, code, expiresAt });
 
   return {
     challengeId,
+    code,
     email,
     expiresAt,
   };
 }
 
-export function verifyLoginOtp(challengeId, _submittedCode) {
+export function verifyLoginOtp(challengeId, submittedCode) {
   const challenge = challenges.get(challengeId);
   if (!challenge) throw new ApiError(400, "This authentication code is invalid");
 
   if (challenge.expiresAt <= Date.now()) {
     challenges.delete(challengeId);
     throw new ApiError(410, "This authentication code has expired. Request a new one");
+  }
+
+  if (challenge.code !== submittedCode) {
+    throw new ApiError(400, "This authentication code is invalid");
   }
 
   challenges.delete(challengeId);

@@ -172,7 +172,7 @@ export default function LoginPage() {
     setVerificationCode(nextCode.join("").replace(/ /g, ""));
 
     if (digit) {
-      document.getElementById(`verification-code-${index + 1}`)?.focus();
+      document.getElementById(`verification-code-${Math.min(index + 1, 5)}`)?.focus();
     }
   };
 
@@ -263,7 +263,6 @@ export default function LoginPage() {
           <button type="button" onClick={() => setShowEmailReceipt(true)} className="absolute right-4 top-4 flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-primary-soft">
             <Mail className="h-3.5 w-3.5" />
             View email
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] text-white">1</span>
           </button>
           <div className="flex flex-col items-center text-center">
             <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
