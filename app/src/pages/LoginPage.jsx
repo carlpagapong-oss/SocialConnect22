@@ -408,7 +408,7 @@ export default function LoginPage() {
                 {successMessage}
               </p>
             )}
-            <Field label="Username or email">
+            <Field label="Username">
               <input
                 required
                 aria-invalid={Boolean(error)}
