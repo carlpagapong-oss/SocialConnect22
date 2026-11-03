@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, MailCheck, ShieldCheck } from "lucide-react";
+import { Check, Copy, Mail, MailCheck, ShieldCheck } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Field } from "@/components/common/Field";
 import { PasswordField } from "@/components/common/PasswordField";
@@ -26,6 +26,8 @@ export default function LoginPage() {
   const [successVisible, setSuccessVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(0);
+  const [showEmailReceipt, setShowEmailReceipt] = useState(false);
+  const [copiedReceiptCode, setCopiedReceiptCode] = useState(false);
 
   const normalizeLoginChallenge = (response) => {
     const expiresAt = Number(response.expiresAt);
@@ -237,35 +239,60 @@ export default function LoginPage() {
     setError("");
     setSuccessMessage("");
     setView("login");
+    setShowEmailReceipt(false);
+  };
+
+  const copyReceiptCode = async () => {
+    const code = pendingAuth?.response?.code;
+    if (!code) return;
+    await navigator.clipboard.writeText(code);
+    setCopiedReceiptCode(true);
+    window.setTimeout(() => setCopiedReceiptCode(false), 1800);
+  };
+
+  const useReceiptCode = () => {
+    if (!pendingAuth?.response?.code) return;
+    setVerificationCode(pendingAuth.response.code);
+    setShowEmailReceipt(false);
   };
 
   return (
     <AuthLayout showSocialProof={false}>
       {view === "verification" ? (
-        <>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <MailCheck className="h-7 w-7" strokeWidth={1.8} />
+        <div className="relative rounded-[22px] border border-border bg-card px-7 pb-7 pt-8 shadow-[0_12px_35px_-28px_rgba(100,70,180,0.45)] sm:px-8">
+          <button type="button" onClick={() => setShowEmailReceipt(true)} className="absolute right-4 top-4 flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[10px] font-bold text-muted-foreground hover:bg-primary-soft">
+            <Mail className="h-3.5 w-3.5" />
+            View email
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] text-white">1</span>
+          </button>
+          <div className="flex flex-col items-center text-center">
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <MailCheck className="h-7 w-7" strokeWidth={1.8} />
+              <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-white">
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
+            </div>
+            <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
+              {pendingAuth?.type === "reset" ? "Step 2 of 3" : "One last step"}
+            </p>
+            <h2 className="mt-2 text-[28px] font-bold tracking-[-0.04em] text-foreground">Check your inbox</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              We sent a 6-digit verification code to
+              <br />
+              <strong className="text-foreground">{pendingAuth?.response?.email}</strong>
+            </p>
           </div>
-          <p className="mt-7 text-center text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Step 2 of 3
-          </p>
-          <h2 className="mt-2 text-center text-3xl font-extrabold tracking-tight">Check your email</h2>
-          <p className="mt-2 text-center text-sm leading-relaxed text-muted-foreground">
-            We sent a verification code to your registered email address.
-            <br />
-            Enter the code below.
-          </p>
           {pendingAuth?.response?.expiresAt && (
-            <p className="mt-2 text-center text-xs text-muted-foreground">
+            <p className="mt-4 text-center text-xs text-muted-foreground">
               Code expires in{" "}
               <span className="font-semibold text-foreground">
                 {Math.floor(secondsRemaining / 60)}:{String(secondsRemaining % 60).padStart(2, "0")}
               </span>
             </p>
           )}
-          <form className="mt-8 space-y-6" onSubmit={handleVerificationSubmit}>
+          <form className="mt-7 space-y-6" onSubmit={handleVerificationSubmit}>
             <FormError id="login-error" message={error} />
-            <Field label="Verification code">
+            <Field label={<span className="text-foreground">Social Connect verification code</span>}>
               <div className="flex justify-between gap-2" onPaste={handleCodePaste}>
                 {Array.from({ length: 6 }, (_, index) => (
                   <input
@@ -279,7 +306,7 @@ export default function LoginPage() {
                     aria-label={`Verification digit ${index + 1}`}
                     aria-invalid={Boolean(error)}
                     aria-describedby={error ? "login-error" : undefined}
-                    className="h-12 w-11 rounded-lg border border-input bg-card text-center text-lg font-semibold outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 sm:w-12"
+                    className="h-13 w-11 rounded-xl border border-input bg-card text-center text-lg font-semibold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 sm:w-12"
                     value={verificationCode[index] || ""}
                     onChange={(event) => handleCodeChange(index, event.target.value)}
                     onKeyDown={(event) => handleCodeKeyDown(index, event)}
@@ -287,16 +314,16 @@ export default function LoginPage() {
                 ))}
               </div>
             </Field>
-            <button disabled={submitting} type="submit" className={primaryButtonCls}>
-              {submitting ? "Verifying..." : "Verify code"}
+            <button disabled={submitting} type="submit" className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground shadow-button transition hover:opacity-90 disabled:opacity-60">
+              {submitting ? "Verifying..." : "Verify email"}
             </button>
             {pendingAuth?.response?.expiresAt && (
               <p className="text-center text-xs text-muted-foreground">
-                Didn&apos;t receive the code?{" "}
+                Didn&apos;t receive the email?{" "}
                 <button
                   type="button"
                   disabled={submitting || secondsRemaining > 0}
-                  className="font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  className="font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={handleResendCode}
                 >
                   Resend code
@@ -305,13 +332,44 @@ export default function LoginPage() {
             )}
             <button
               type="button"
-              className="w-full text-sm text-muted-foreground hover:text-foreground"
+              className="w-full border-t border-border pt-5 text-sm text-muted-foreground hover:text-primary"
               onClick={returnToLogin}
             >
-              Back to login
+              ← &nbsp;Back to sign in
             </button>
           </form>
-        </>
+          {showEmailReceipt && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-background px-3 py-5 text-foreground sm:px-5 sm:py-8">
+              <div className="mx-auto max-w-2xl">
+                <button type="button" onClick={() => setShowEmailReceipt(false)} className="mb-5 text-sm text-[#617066]">← Back to verification</button>
+                <div className="flex items-end justify-between border-b border-border pb-4">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-primary">Received email</p>
+                    <h1 className="mt-2 text-lg font-semibold">Your Social Connect verification code</h1>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">Just now</span>
+                </div>
+                <div className="flex items-center gap-2 border-b border-border py-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">S</div>
+                  <div><p className="text-xs font-bold">Social Connect</p><p className="text-[9px] text-muted-foreground">hello@socialconnect.com</p></div>
+                  <span className="ml-auto text-[9px] text-muted-foreground">to {pendingAuth?.response?.email}</span>
+                </div>
+                <div className="mt-5 rounded-xl border border-[#dfe8df] bg-white p-7">
+                  <div className="flex items-center gap-2"><div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">S</div><span className="text-sm font-bold">Social Connect</span></div>
+                  <h2 className="mt-7 text-sm font-bold">Hi there,</h2>
+                  <p className="mt-2 text-[11px] text-muted-foreground">Use the Social Connect verification code below to finish setting up your account.</p>
+                  <button type="button" onClick={copyReceiptCode} disabled={!pendingAuth?.response?.code} className="mt-5 flex w-full items-center justify-between rounded-lg border border-dashed border-primary/50 bg-primary-soft px-4 py-4 text-left disabled:opacity-70">
+                    <span className="text-xl font-bold tracking-[0.28em] text-primary">{pendingAuth?.response?.code || "------"}</span>
+                    <span className="text-[9px] font-bold uppercase text-primary">{copiedReceiptCode ? "Copied" : "Click to copy"}</span>
+                  </button>
+                  <p className="mt-4 text-[10px] leading-relaxed text-muted-foreground">This code expires in <strong>10 minutes</strong>. If you didn&apos;t request this code, you can safely ignore this email.</p>
+                  <button type="button" onClick={useReceiptCode} disabled={!pendingAuth?.response?.code} className="mt-5 h-10 w-full rounded-lg bg-primary text-xs font-semibold text-primary-foreground disabled:opacity-50">USE CODE</button>
+                  <div className="mt-5 border-t border-border pt-3 text-[9px] text-muted-foreground">Sent securely by Social Connect · Please do not reply to this email.</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       ) : view === "reset-password" ? (
         <>
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
