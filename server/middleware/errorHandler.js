@@ -27,6 +27,7 @@ export function errorHandler(err, _req, res, _next) {
 
   res.status(statusCode).json({
     message,
+    ...(err.retryAfter ? { retryAfter: err.retryAfter } : {}),
     ...(env.nodeEnv === "development" && statusCode >= 500 ? { stack: err.stack } : {}),
   });
 }

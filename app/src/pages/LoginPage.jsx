@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [successVisible, setSuccessVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(0);
+  const [resendCooldownRemaining, setResendCooldownRemaining] = useState(0);
   const [showEmailReceipt, setShowEmailReceipt] = useState(false);
   const [copiedReceiptCode, setCopiedReceiptCode] = useState(false);
 
@@ -59,6 +60,10 @@ export default function LoginPage() {
         Math.ceil((pendingAuth.response.expiresAt - Date.now()) / 1000),
       );
       setSecondsRemaining(remaining);
+      const cooldownRemaining = pendingAuth.response.cooldownUntil
+        ? Math.max(0, Math.ceil((pendingAuth.response.cooldownUntil - Date.now()) / 1000))
+        : 0;
+      setResendCooldownRemaining(cooldownRemaining);
     };
 
     updateRemaining();
@@ -133,7 +138,7 @@ export default function LoginPage() {
   };
 
   const handleResendCode = async () => {
-    if (!pendingAuth?.response?.expiresAt || secondsRemaining > 0) return;
+    if (!pendingAuth?.response?.expiresAt) return;
 
     setError("");
     setSubmitting(true);
@@ -158,7 +163,12 @@ export default function LoginPage() {
         response: normalizeLoginChallenge(response),
       });
       setVerificationCode("");
+      setShowEmailReceipt(false);
+      setCopiedReceiptCode(false);
     } catch (err) {
+      if (err?.status === 429) {
+        setResendCooldownRemaining(Math.max(0, Number(err.retryAfter) || 300));
+      }
       setError(err?.message || "Unable to resend the authentication code.");
     } finally {
       setSubmitting(false);
@@ -321,11 +331,13 @@ export default function LoginPage() {
                 Didn&apos;t receive the email?{" "}
                 <button
                   type="button"
-                  disabled={submitting || secondsRemaining > 0}
+                  disabled={submitting || resendCooldownRemaining > 0}
                   className="font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={handleResendCode}
                 >
-                  Resend code
+                  {resendCooldownRemaining > 0
+                    ? `Resend available in ${Math.floor(resendCooldownRemaining / 60)}:${String(resendCooldownRemaining % 60).padStart(2, "0")}`
+                    : "Resend code"}
                 </button>
               </p>
             )}
@@ -361,7 +373,7 @@ export default function LoginPage() {
                     <span className="text-xl font-bold tracking-[0.28em] text-primary">{pendingAuth?.response?.code || "------"}</span>
                     <span className="text-[9px] font-bold uppercase text-primary">{copiedReceiptCode ? "Copied" : "Click to copy"}</span>
                   </button>
-                  <p className="mt-4 text-[10px] leading-relaxed text-muted-foreground">This code expires in <strong>10 minutes</strong>. If you didn&apos;t request this code, you can safely ignore this email.</p>
+                  <p className="mt-4 text-[10px] leading-relaxed text-muted-foreground">This code expires in <strong>2 minutes</strong>. If you didn&apos;t request this code, you can safely ignore this email.</p>
                   <button type="button" onClick={useReceiptCode} disabled={!pendingAuth?.response?.code} className="mt-5 h-10 w-full rounded-lg bg-primary text-xs font-semibold text-primary-foreground disabled:opacity-50">USE CODE</button>
                   <div className="mt-5 border-t border-border pt-3 text-[9px] text-muted-foreground">Sent securely by Social Connect · Please do not reply to this email.</div>
                 </div>

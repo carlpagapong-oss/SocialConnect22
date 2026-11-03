@@ -7,9 +7,10 @@ export const tokenStore = {
 };
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, details = {}) {
     super(message);
     this.status = status;
+    Object.assign(this, details);
   }
 }
 
@@ -34,7 +35,7 @@ async function request(path, { method = "GET", body } = {}) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 401 && token) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
-    throw new ApiError(data.message || "Something went wrong", response.status);
+    throw new ApiError(data.message || "Something went wrong", response.status, data);
   }
   return data;
 }

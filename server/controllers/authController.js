@@ -120,11 +120,11 @@ export const resendLoginCode = asyncHandler(async (req, res) => {
   const { challengeId } = req.body;
   if (!challengeId) throw new ApiError(400, "Authentication session is required");
 
-  const accountId = resendLoginOtp(challengeId);
+  const { accountId, resendCount } = resendLoginOtp(challengeId);
   const user = await getUserById(accountId);
   if (!user) throw new ApiError(401, "Your account could not be found");
 
-  res.json(issueLoginOtp(user.id, user.email));
+  res.json(issueLoginOtp(user.id, user.email, resendCount));
 });
 
 export const requestPasswordReset = asyncHandler(async (req, res) => {
@@ -145,12 +145,12 @@ export const resendPasswordResetCode = asyncHandler(async (req, res) => {
   const { challengeId } = req.body;
   if (!challengeId) throw new ApiError(400, "Authentication session is required");
 
-  const accountId = resendLoginOtp(challengeId);
+  const { accountId, resendCount } = resendLoginOtp(challengeId);
   const user = await getUserById(accountId);
   if (!user) throw new ApiError(404, "This email is not registered in the app");
 
   res.json({
-    ...issueLoginOtp(user.id, user.email),
+    ...issueLoginOtp(user.id, user.email, resendCount),
     email: user.email,
   });
 });
